@@ -1,194 +1,121 @@
-# CV Optimizer KE 🇰🇪
+# CV Optimizer KE
 
-> AI-powered CV optimization platform built for the Kenyan job market.
-> Helps job seekers beat ATS systems and land more interviews.
+AI-powered CV optimization software for the Kenyan job market. It analyzes a PDF CV against a job description and returns ATS and match scores, missing keywords, a rewritten summary, weak sections, and interview tips.
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![Tailwind](https://img.shields.io/badge/Tailwind-v4-38bdf8)
 ![MariaDB](https://img.shields.io/badge/MariaDB-003545)
-![Groq](https://img.shields.io/badge/Groq-Llama3.3-orange)
+![Groq](https://img.shields.io/badge/Groq-AI-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
----
+## Features
 
-## 🚀 Live Demo
+- PDF CV upload and text extraction
+- Groq-powered CV and job-description analysis
+- ATS, match, and readability scores
+- Missing and matched keyword suggestions
+- Rewritten professional summary
+- Job-specific interview tips
+- Local signup/login with bcrypt password hashing
+- HTTP-only, server-side cookie sessions
+- One free analysis per account
+- Additional analyses through M-Pesa Daraja STK Push
+- User dashboard and analysis history
+- Small admin dashboard and user detail view
+- API documentation at `/docs`
 
-[https://ai-powered-cv-optimizer.vercel.app/](https://ai-powered-cv-optimizer.vercel.app/)
+## Technology
 
----
+| Area | Technology |
+| --- | --- |
+| Frontend | Next.js 16 App Router, React 19, TypeScript |
+| Styling | Tailwind CSS v4 |
+| Backend | Next.js route handlers |
+| Database | MariaDB |
+| Database client | mysql2 |
+| Authentication | bcryptjs password hashing and local database sessions |
+| AI | Groq Chat Completions API |
+| PDF parsing | unpdf |
+| Payments | Safaricom M-Pesa Daraja STK Push |
+| Testing | Jest |
 
-## 📌 Problem Statement
+## Architecture
 
-Over 75% of CVs submitted to Kenyan companies never reach a human recruiter.
-They are automatically rejected by Applicant Tracking Systems (ATS) due to
-missing keywords, poor formatting, or weak summaries. Most job seekers have
-no idea this is happening.
-
-CV Optimizer KE solves this by using AI to analyze a candidate's CV against
-a specific job description and provide actionable feedback in under 30 seconds.
-
----
-
-## ✨ Features
-
-- 📄 **PDF CV upload** — upload your CV as a PDF
-- 🤖 **AI analysis** — powered by a configurable Groq model
-- 📊 **ATS Score** — see how likely your CV is to pass automated screening
-- 🔑 **Missing keywords** — exact keywords you need to add
-- ✍️ **Rewritten summary** — AI rewrites your professional summary for the role
-- 🎯 **Interview tips** — tailored tips based on the job and your background
-- 💳 **M-Pesa payments** — pay via STK Push (KES 200 per analysis)
-- 🔐 **Auth** — password hashing and local cookie sessions
-- 📈 **Admin dashboard** — view users, analyses, and revenue
-- 📚 **API documentation** — full REST API docs at /docs
-
----
-
-## 🏗️ System Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                        CLIENT                           │
-│         Next.js 15 App Router (React + TypeScript)      │
-│   Landing │ Auth │ Dashboard │ Analyze │ Admin │ Docs   │
-└─────────────────────────┬───────────────────────────────┘
-                          │ HTTP requests
-┌─────────────────────────▼───────────────────────────────┐
-│                     API LAYER                           │
-│              Next.js API Routes (Edge)                  │
-│                                                         │
-│  POST /api/analyze        → CV Analysis                 │
-│  POST /api/mpesa/initiate → STK Push                    │
-│  POST /api/mpesa/callback → Payment webhook             │
-│  GET  /api/admin/stats    → Admin data                  │
-└──────┬──────────────────────────┬───────────────────────┘
-       │                          │
-┌──────▼──────┐          ┌────────▼────────┐
-│   GROQ AI   │          │     MariaDB      │
-│             │          │                 │
-│ GPT-OSS     │          │ Local database  │
-│ 70B model   │          │ Local sessions  │
-│             │          │ bcrypt passwords│
-│ CV Analysis │          │ MariaDB storage │
-└─────────────┘          └────────┬────────┘
-                                  │
-                         ┌────────▼────────┐
-                         │  SAFARICOM      │
-                         │  DARAJA API     │
-                         │                 │
-                         │ STK Push        │
-                         │ M-Pesa payments │
-                         └─────────────────┘
-
-┌─────────────────────────────────────────────────────────┐
-│                    CI/CD PIPELINE                       │
-│                                                         │
-│  GitHub Push → GitHub Actions → Run Tests → Build      │
-│                                         → Deploy Vercel │
-└─────────────────────────────────────────────────────────┘
+```text
+Browser
+  -> Next.js pages and components
+  -> Next.js API route handlers
+       -> Groq API for CV analysis
+       -> MariaDB for users, sessions, analyses, and payments
+       -> Safaricom Daraja API for M-Pesa STK Push
+       -> Daraja callback route for payment confirmation
 ```
 
----
+The application does not require Supabase or another hosted database. Groq and Daraja are retained as external integrations.
 
-## 🛠️ Tech Stack
+## Project Structure
 
-| Layer       | Technology              |
-| ----------- | ----------------------- |
-| Framework   | Next.js 15 (App Router) |
-| Language    | TypeScript              |
-| Styling     | Tailwind CSS v4         |
-| AI Model    | OpenAI GPT-OSS 120B via Groq |
-| Database    | MariaDB                 |
-| Auth        | Local sessions + bcrypt |
-| Payments    | M-Pesa Daraja API       |
-| PDF Parsing | unpdf                   |
-| Hosting     | Vercel                  |
-| CI/CD       | GitHub Actions          |
-| Testing     | Jest + ts-jest          |
-
----
-
-## 📁 Project Structure
-
-```
-cv-optimizer/
-├── src/
-│   ├── app/
-│   │   ├── (auth)/
-│   │   │   ├── login/page.tsx
-│   │   │   └── signup/page.tsx
-│   │   ├── admin/
-│   │   │   ├── page.tsx
-│   │   │   └── users/[userId]/page.tsx
-│   │   ├── analyze/page.tsx
-│   │   ├── dashboard/page.tsx
-│   │   ├── docs/page.tsx
-│   │   ├── api/
-│   │   │   ├── analyze/route.ts
-│   │   │   ├── admin/stats/route.ts
-│   │   │   └── mpesa/
-│   │   │       ├── initiate/route.ts
-│   │   │       └── callback/route.ts
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── globals.css
-│   ├── lib/
-│   │   ├── auth.ts
-│   │   ├── db.ts
-│   │   └── mpesa.ts
-│   └── components/
-│       └── (shared components)
-├── src/__tests__/
-│   └── analyze.test.ts
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── middleware.ts
-├── .env.local
-└── README.md
+```text
+src/
+  app/
+    (auth)/login/          Login page
+    (auth)/signup/         Signup page
+    admin/                 Admin dashboard and user details
+    analyze/               PDF upload and analysis page
+    dashboard/             User dashboard
+    docs/                  API documentation
+    api/
+      auth/                Login, signup, logout, and current-user routes
+      analyze/             CV analysis route
+      admin/               Admin statistics and user routes
+      mpesa/               STK Push initiation and callback routes
+      dashboard/           Dashboard data route
+  lib/
+    auth.ts                Cookie sessions and current-user lookup
+    db.ts                  MariaDB connection pool
+    mpesa.ts               Daraja API integration
+database.sql               MariaDB schema
+.env.example               Environment variable template
 ```
 
----
+## Prerequisites
 
-## ⚙️ Getting Started
-
-### Prerequisites
-
-- Node.js 22.16+ (22.14 and older need the built-in Promise polyfill)
+- Node.js 22.16 or newer
 - npm
-- MariaDB 10.6+
-- Groq API key
-- Safaricom Daraja account
+- MariaDB 10.6 or newer
+- A Groq API key
+- Safaricom Daraja sandbox or production credentials
+- An HTTPS, publicly reachable callback URL for Daraja
 
-### Installation
+## Local Setup
+
+### 1. Install dependencies
 
 ```bash
-# Clone the repo
-git clone https://github.com/YOUR-USERNAME/cv-optimizer.git
-cd cv-optimizer
-
-# Install dependencies
 npm install
-
-# Set up environment variables
-cp .env.example .env.local
-# Fill in your keys in .env.local
-
-# Run the development server
-npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+### 2. Create the MariaDB database
 
----
+Run the schema script:
 
-## 🔑 Environment Variables
+```bash
+mariadb -u root -p < database.sql
+```
 
-Create a `.env.local` file in the root:
+Then create or reuse a database user with access to `cv_optimiser`.
+
+### 3. Configure environment variables
+
+Copy the example file:
+
+```bash
+cp .env.example .env.local
+```
 
 ```env
-# AI
+# Groq
 GROQ_API_KEY=
 GROQ_MODEL=openai/gpt-oss-120b
 
@@ -197,7 +124,7 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=cv_optimizer
 DB_PASSWORD=
-DB_NAME=cv_optimizer
+DB_NAME=cv_optimiser
 
 # M-Pesa Daraja
 MPESA_CONSUMER_KEY=
@@ -206,78 +133,101 @@ MPESA_SHORTCODE=
 MPESA_PASSKEY=
 MPESA_CALLBACK_URL=
 
-# App
-NEXT_PUBLIC_APP_URL=
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+APP_SESSION_DAYS=7
 ```
 
----
+`MPESA_CALLBACK_URL` must be an HTTPS public URL that points to `/api/mpesa/callback`. For local testing, use an HTTPS tunnel to expose port 3000.
 
-## 🧪 Running Tests
+### 4. Start the application
 
 ```bash
-npm test
+npm run dev
 ```
 
+Open [http://localhost:3000](http://localhost:3000).
+
+## M-Pesa Testing
+
+The M-Pesa integration uses Daraja sandbox endpoints.
+
+1. Configure valid sandbox consumer credentials, short code, passkey, and callback URL.
+2. Use a Daraja sandbox test phone number.
+3. Enter the phone number in the format `07XXXXXXXX` or `2547XXXXXXXXX`.
+4. Use the public HTTPS callback URL so Safaricom can deliver payment confirmations.
+
+Without a public callback URL, Daraja will reject the STK Push request with an invalid callback URL error.
+
+## Database Tables
+
+- `users`: account details, password hash, roles, and analysis credit counters
+- `sessions`: HTTP-only session identifiers and expiry timestamps
+- `analyses`: job title, scores, full analysis result, and payment state
+- `payments`: phone number, amount, status, receipt, and Daraja request identifiers
+
+The complete table definitions are in `database.sql`.
+
+## API Routes
+
+| Method | Route | Description |
+| --- | --- | --- |
+| POST | `/api/auth/signup` | Create an account and session |
+| POST | `/api/auth/login` | Log in |
+| POST | `/api/auth/logout` | Delete the current session |
+| GET | `/api/auth/me` | Get the current user |
+| GET | `/api/dashboard` | Get dashboard profile and analysis history |
+| POST | `/api/analyze` | Analyze a CV |
+| POST | `/api/mpesa/initiate` | Start an STK Push |
+| POST | `/api/mpesa/callback` | Receive Daraja payment callbacks |
+| GET | `/api/admin/stats` | Get admin statistics |
+| GET | `/api/admin/users/:id` | Get a user's profile and analyses |
+
+Detailed request and response examples are available in the in-app API documentation.
+
+## Scripts
+
+```bash
+npm run dev
+npm test -- --runInBand
+npm run build
+npm run lint
+npm start
 ```
-PASS src/__tests__/analyze.test.ts
-  parseAnalysisResponse  ✓
-  formatPhone            ✓
-  scoreColor             ✓
-  isFreeAnalysisAvailable ✓
-  requiresPayment        ✓
-  isValidCV              ✓
 
-Tests: 19 passed
+## Tests
+
+The Jest suite currently covers analysis response parsing, Daraja phone formatting, score colors, free-analysis eligibility, payment requirements, and CV text validation.
+
+```bash
+npm test -- --runInBand
 ```
 
----
+## Creating an Admin
 
-## 💰 Business Model
-
-| Plan        | Price   | Features                      |
-| ----------- | ------- | ----------------------------- |
-| Free        | KES 0   | 1 analysis                    |
-| Pay per use | KES 200 | Unlimited analyses via M-Pesa |
-
----
-
-## 🗄️ Database Schema
+Set `is_admin = 1` for a user in MariaDB:
 
 ```sql
--- User profiles
-profiles (id, email, full_name, analyses_used, analyses_paid, is_admin, created_at)
-
--- CV analyses
-analyses (id, user_id, job_title, ats_score, match_score, result, paid, created_at)
-
--- M-Pesa payments
-payments (id, user_id, phone, amount, mpesa_receipt, status, created_at)
+USE cv_optimiser;
+UPDATE users SET is_admin = 1 WHERE email = 'admin@example.com';
 ```
 
----
+The admin account must log in again after the role is changed.
 
-## 🔌 API Reference
+## Production Notes
 
-Full API documentation available at [/docs](https://ai-powered-cv-optimizer.vercel.app/docs)
+- Replace sandbox Daraja credentials and URLs before production use.
+- Use secrets from the deployment environment rather than committing credentials.
+- Use a strong random password for the MariaDB application user.
+- Back up MariaDB regularly.
+- Serve the application over HTTPS.
+- Keep `MPESA_CALLBACK_URL` synchronized with the deployed public domain.
+- Remove or restrict admin accounts after testing.
 
----
-
-## 🚀 Deployment
-
-The app is deployed on Vercel with automatic deployments on every push to `main`.
-
-```
-git push origin main → GitHub Actions runs tests → Vercel deploys
-```
-
----
-
-## 👨‍💻 Author
+## Author
 
 Eric
 
----
-
-## 📄 License
+## License
 
 MIT
