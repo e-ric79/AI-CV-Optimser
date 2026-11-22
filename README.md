@@ -6,7 +6,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![Tailwind](https://img.shields.io/badge/Tailwind-v4-38bdf8)
-![Supabase](https://img.shields.io/badge/Supabase-green)
+![MariaDB](https://img.shields.io/badge/MariaDB-003545)
 ![Groq](https://img.shields.io/badge/Groq-Llama3.3-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -33,13 +33,13 @@ a specific job description and provide actionable feedback in under 30 seconds.
 ## ✨ Features
 
 - 📄 **PDF CV upload** — upload your CV as a PDF
-- 🤖 **AI analysis** — powered by Llama 3.3 70B via Groq
+- 🤖 **AI analysis** — powered by a configurable Groq model
 - 📊 **ATS Score** — see how likely your CV is to pass automated screening
 - 🔑 **Missing keywords** — exact keywords you need to add
 - ✍️ **Rewritten summary** — AI rewrites your professional summary for the role
 - 🎯 **Interview tips** — tailored tips based on the job and your background
 - 💳 **M-Pesa payments** — pay via STK Push (KES 200 per analysis)
-- 🔐 **Auth** — secure signup/login via Supabase
+- 🔐 **Auth** — password hashing and local cookie sessions
 - 📈 **Admin dashboard** — view users, analyses, and revenue
 - 📚 **API documentation** — full REST API docs at /docs
 
@@ -65,12 +65,12 @@ a specific job description and provide actionable feedback in under 30 seconds.
 └──────┬──────────────────────────┬───────────────────────┘
        │                          │
 ┌──────▼──────┐          ┌────────▼────────┐
-│   GROQ AI   │          │    SUPABASE     │
+│   GROQ AI   │          │     MariaDB      │
 │             │          │                 │
-│ Llama 3.3   │          │ PostgreSQL DB   │
-│ 70B model   │          │ Auth (JWT)      │
-│             │          │ Row Level       │
-│ CV Analysis │          │ Security        │
+│ GPT-OSS     │          │ Local database  │
+│ 70B model   │          │ Local sessions  │
+│             │          │ bcrypt passwords│
+│ CV Analysis │          │ MariaDB storage │
 └─────────────┘          └────────┬────────┘
                                   │
                          ┌────────▼────────┐
@@ -98,9 +98,9 @@ a specific job description and provide actionable feedback in under 30 seconds.
 | Framework   | Next.js 15 (App Router) |
 | Language    | TypeScript              |
 | Styling     | Tailwind CSS v4         |
-| AI Model    | Llama 3.3 70B via Groq  |
-| Database    | Supabase (PostgreSQL)   |
-| Auth        | Supabase Auth           |
+| AI Model    | OpenAI GPT-OSS 120B via Groq |
+| Database    | MariaDB                 |
+| Auth        | Local sessions + bcrypt |
 | Payments    | M-Pesa Daraja API       |
 | PDF Parsing | unpdf                   |
 | Hosting     | Vercel                  |
@@ -134,9 +134,8 @@ cv-optimizer/
 │   │   ├── page.tsx
 │   │   └── globals.css
 │   ├── lib/
-│   │   ├── supabase/
-│   │   │   ├── client.ts
-│   │   │   └── server.ts
+│   │   ├── auth.ts
+│   │   ├── db.ts
 │   │   └── mpesa.ts
 │   └── components/
 │       └── (shared components)
@@ -156,9 +155,9 @@ cv-optimizer/
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22.16+ (22.14 and older need the built-in Promise polyfill)
 - npm
-- Supabase account
+- MariaDB 10.6+
 - Groq API key
 - Safaricom Daraja account
 
@@ -191,10 +190,14 @@ Create a `.env.local` file in the root:
 ```env
 # AI
 GROQ_API_KEY=
+GROQ_MODEL=openai/gpt-oss-120b
 
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# MariaDB
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=cv_optimizer
+DB_PASSWORD=
+DB_NAME=cv_optimizer
 
 # M-Pesa Daraja
 MPESA_CONSUMER_KEY=

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initiateSTKPush } from '@/lib/mpesa'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth'
+import { pool } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { phone, amount } = await req.json()
@@ -16,16 +16,28 @@ export async function POST(req: NextRequest) {
     const mpesaRes = await initiateSTKPush(phone, amount)
 
     // Save pending payment
-    await supabase.from('payments').insert({
-      user_id: user.id,
-      phone,
-      amount,
-      status: 'pending',
-    })
+    await pool.execute(
+      `INSERT INTO payments
+       (user_id, phone, amount, status, checkout_request_id, merchant_request_id)
+       VALUES (:userId, :phone, :amount, 'pending', :checkoutRequestId, :merchantRequestId)`,
+      {
+        userId: user.id,
+        phone,
+        amount,
+        checkoutRequestId: mpesaRes.CheckoutRequestID || null,
+        merchantRequestId: mpesaRes.MerchantRequestID || null,
+      },
+    )
 
     return NextResponse.json({ success: true, data: mpesaRes })
   } catch (err: any) {
     console.error('M-Pesa error:', err)
-    return NextResponse.json({ error: err.message || 'Payment failed' }, { status: 500 })
+    const darajaMessage =
+      err?.response?.data?.errorMessage ||
+      err?.response?.data?.message
+    return NextResponse.json(
+      { error: darajaMessage || err.message || 'Payment failed' },
+      { status: err?.response?.status === 400 ? 400 : 500 },
+    )
   }
 }

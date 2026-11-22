@@ -1,27 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth'
+import { pool } from '@/lib/db'
 import { extractText } from 'unpdf'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { cvBase64, jobDescription, jobTitle, paid } = await req.json()
 
     // Check usage
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('analyses_used, analyses_paid')
-      .eq('id', user.id)
-      .single()
-
-    const used = profile?.analyses_used ?? 0
-    const paidCount = profile?.analyses_paid ?? 0
+    const used = Number(user.analyses_used || 0)
+    const paidCount = Number(user.analyses_paid || 0)
 
     if (used >= 1 && !paid && paidCount === 0) {
       return NextResponse.json({ error: 'Payment required' }, { status: 402 })
@@ -59,7 +53,7 @@ Job Description:
 ${jobDescription}`
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       max_tokens: 1500,
@@ -70,27 +64,24 @@ ${jobDescription}`
     const analysis = JSON.parse(clean)
 
     // Save to DB
-    const { error: insertError } = await supabase.from('analyses').insert({
-      user_id: user.id,
-      job_title: jobTitle || 'Untitled role',
-      ats_score: analysis.ats_score,
-      match_score: analysis.match_score,
-      result: analysis,
-      paid: paid || false,
-    })
-
-    if (insertError) {
-      console.error('Insert error:', insertError)
-    }
-
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ analyses_used: used + 1 })
-      .eq('id', user.id)
-
-    if (updateError) {
-      console.error('Profile update error:', updateError)
-    }
+    await pool.execute(
+      `INSERT INTO analyses
+       (user_id, job_title, ats_score, match_score, readability_score, result, paid)
+       VALUES (:userId, :jobTitle, :atsScore, :matchScore, :readabilityScore, :result, :paid)`,
+      {
+        userId: user.id,
+        jobTitle: jobTitle || 'Untitled role',
+        atsScore: analysis.ats_score,
+        matchScore: analysis.match_score,
+        readabilityScore: analysis.readability_score || 0,
+        result: JSON.stringify(analysis),
+        paid: paid || false,
+      },
+    )
+    await pool.execute(
+      'UPDATE users SET analyses_used = analyses_used + 1 WHERE id = :userId',
+      { userId: user.id },
+    )
 
     return NextResponse.json({ result: analysis })
 

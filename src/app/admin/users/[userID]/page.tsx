@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 
 interface Profile {
   full_name: string;
@@ -37,45 +36,26 @@ export default function UserDashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient();
-
-      // Verify current user is admin
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+      const me = await fetch("/api/auth/me");
+      if (me.status === 401) {
         router.push("/login");
         return;
       }
-
-      const { data: adminProfile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .single();
-
-      if (!adminProfile?.is_admin) {
+      const meData = await me.json();
+      if (!meData.user?.is_admin) {
         setError("Access denied.");
         setLoading(false);
         return;
       }
-
-      // Fetch target user's profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-
-      // Fetch target user's analyses
-      const { data: analysesData } = await supabase
-        .from("analyses")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      setProfile(profileData);
-      setAnalyses(analysesData || []);
+      const res = await fetch(`/api/admin/users/${userId}`);
+      if (!res.ok) {
+        setError("Could not load this user.");
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setProfile(data.profile);
+      setAnalyses(data.analyses || []);
       setLoading(false);
     };
 

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 
 interface Stats {
   total_users: number;
@@ -45,11 +44,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+      const me = await fetch("/api/auth/me");
+      if (me.status === 401) {
         router.push("/login");
         return;
       }
@@ -73,8 +69,7 @@ export default function AdminPage() {
   }, [router]);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch("/api/auth/logout", { method: "POST" });
     router.push("/");
   };
 

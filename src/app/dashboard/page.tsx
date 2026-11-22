@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 
 interface Profile {
   full_name: string
@@ -28,25 +27,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      const { data: analysesData } = await supabase
-        .from('analyses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      setProfile(profileData)
-      setAnalyses(analysesData || [])
+      const res = await fetch('/api/dashboard')
+      if (res.status === 401) { router.push('/login'); return }
+      const data = await res.json()
+      setProfile(data.profile)
+      setAnalyses(data.analyses || [])
       setLoading(false)
     }
 
@@ -54,8 +39,7 @@ export default function DashboardPage() {
   }, [router])
 
   const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/')
   }
 

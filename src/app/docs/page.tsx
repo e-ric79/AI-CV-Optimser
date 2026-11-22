@@ -52,9 +52,9 @@ export default function DocsPage() {
             Authentication
           </h2>
           <p className="text-sm text-gray-500 leading-relaxed mb-4">
-            All protected endpoints require an active Supabase session cookie.
-            Authentication is handled via Supabase Auth — users must be signed
-            in through the app before making API requests.
+            All protected endpoints require an active local session cookie.
+            Authentication uses hashed passwords and server-side sessions stored
+            in MariaDB. Users must be signed in before making API requests.
           </p>
           <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
             <p className="text-xs text-amber-700 font-medium">
@@ -86,8 +86,8 @@ export default function DocsPage() {
           </div>
           <div className="p-6 space-y-5">
             <p className="text-sm text-gray-500">
-              Analyzes a CV against a job description using Groq AI (Llama 3.3
-              70B). Returns ATS score, match score, missing keywords, rewritten
+              Analyzes a CV against a job description using Groq AI. Returns
+              ATS score, match score, missing keywords, rewritten
               summary, and interview tips. First analysis is free. Subsequent
               analyses require payment.
             </p>
@@ -402,9 +402,9 @@ export default function DocsPage() {
             {[
               { label: "Framework", value: "Next.js 15 (App Router)" },
               { label: "Language", value: "TypeScript" },
-              { label: "AI Model", value: "Llama 3.3 70B via Groq" },
-              { label: "Database", value: "Supabase (PostgreSQL)" },
-              { label: "Auth", value: "Supabase Auth" },
+              { label: "AI Model", value: "OpenAI GPT-OSS 120B via Groq" },
+              { label: "Database", value: "MariaDB" },
+              { label: "Auth", value: "Local password and cookie sessions" },
               { label: "Payments", value: "M-Pesa Daraja API" },
               { label: "Styling", value: "Tailwind CSS v4" },
               { label: "Hosting", value: "Vercel" },

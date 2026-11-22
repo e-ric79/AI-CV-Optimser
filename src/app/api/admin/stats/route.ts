@@ -1,62 +1,42 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
+import { pool } from "@/lib/db";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    // Check if admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.is_admin) {
+    if (!user.is_admin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get stats
-    const { data: stats } = await supabase
-      .from("admin_stats")
-      .select("*")
-      .single();
-
-    // Get recent users
-    const { data: recentUsers } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, analyses_used, analyses_paid, created_at")
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    // Get recent analyses
-    const { data: recentAnalyses } = await supabase
-      .from("analyses")
-      .select("job_title, ats_score, match_score, created_at")
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    // Get recent payments
-    const { data: recentPayments } = await supabase
-      .from("payments")
-      .select("phone, amount, status, created_at")
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    // Get analyses per day (last 7 days)
-    const { data: dailyAnalyses } = await supabase
-      .from("analyses")
-      .select("created_at")
-      .gte(
-        "created_at",
-        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      )
-      .order("created_at", { ascending: true });
+    const [statsRows] = await pool.query(
+      `SELECT
+        (SELECT COUNT(*) FROM users) AS total_users,
+        (SELECT COUNT(*) FROM analyses) AS total_analyses,
+        (SELECT COUNT(*) FROM payments) AS total_payments,
+        (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed') AS total_revenue`
+    );
+    const statsRowsArray = statsRows as Array<Record<string, unknown>>;
+    const stats = statsRowsArray[0];
+    const [recentUsers] = await pool.query(
+      `SELECT id, full_name, email, analyses_used, analyses_paid, created_at
+       FROM users ORDER BY created_at DESC LIMIT 10`
+    );
+    const [recentAnalyses] = await pool.query(
+      `SELECT job_title, ats_score, match_score, created_at
+       FROM analyses ORDER BY created_at DESC LIMIT 10`
+    );
+    const [recentPayments] = await pool.query(
+      `SELECT phone, amount, status, created_at
+       FROM payments ORDER BY created_at DESC LIMIT 10`
+    );
+    const [dailyAnalyses] = await pool.query(
+      `SELECT created_at FROM analyses
+       WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+       ORDER BY created_at ASC`
+    );
 
     return NextResponse.json({
       stats,
